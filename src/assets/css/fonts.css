@@ -1,0 +1,21 @@
+@font-face {
+  font-family: 'CustomFontEnglish';
+  src: url('@/assets/fonts/Merriweather-BoldItalic.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'CustomFontChinese';
+  src: url('@/assets/fonts/MaShanZheng-Regular.ttf') format('truetype');
+}
+
+/* Default font for English */
+body.en {
+  font-family: 'CustomFontEnglish', sans-serif;
+  font-size: 14px;
+}
+
+/* Font for Chinese */
+body.zh {
+  font-family: 'CustomFontChinese', sans-serif;
+  font-size: 16px;
+}
