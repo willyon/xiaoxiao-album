@@ -2,7 +2,7 @@
  * @Author: zhangshouchang
  * @Date: 2024-08-11 15:07:46
  * @LastEditors: zhangshouchang
- * @LastEditTime: 2024-09-03 04:46:13
+ * @LastEditTime: 2024-09-05 01:09:12
  * @Description: File description
 -->
 
@@ -14,13 +14,13 @@
       <!-- 打开年/月相册 -->
       <p
         class="album-introduction"
-        v-if="imageStore.isCertainAlbumWithTimeRecords"
+        v-else-if="imageStore.isCertainAlbumWithTimeRecords"
         v-html="$t('photoAlbum.introduction2', { dateFormat: imageStore.dateFormatText, count: props.images.length })"
       ></p>
       <!-- 打开【其它】相册 -->
       <p
         class="album-introduction"
-        v-if="imageStore.isCertainAlbumNoTimeRecords"
+        v-else-if="imageStore.isCertainAlbumNoTimeRecords"
         v-html="$t('photoAlbum.introduction3', { count: props.images.length })"
       ></p>
     </template>
@@ -53,16 +53,13 @@
 
 <script setup>
 import { DateTime } from 'luxon'
-import { ref, watch, onMounted, computed, getCurrentInstance } from 'vue'
-import colorPanel from '../constants/colorPanel.js'
-import useColumnByColumnAnimation from '../composables/useColumnByColumnAnimation.js'
+import { ref, watch, computed, onMounted, onActivated } from 'vue'
+import colorPanel from '../constants/colorPanel'
+import useColumnByColumnAnimation from '../composables/useColumnByColumnAnimation'
 import isMobile from '@/utils/isMobile.js'
 import { useImageStore } from '@/stores/imageStore'
 import PhotoPreview from './PhotoPreview.vue'
 import { BY_OTHER, BY_MONTH } from '@/constants/constant'
-const { appContext } = getCurrentInstance()
-
-const currentLocale = appContext.config.globalProperties.$currentLocale
 
 //获取store的实例
 const imageStore = useImageStore()
@@ -74,8 +71,6 @@ let imageLoadedCount = ref(0)
 
 const props = defineProps(['images'])
 
-onMounted(() => {})
-
 const popperTip = computed(() => {
   return (timestamp) => {
     if (timestamp && !isNaN(timestamp)) {
@@ -84,6 +79,8 @@ const popperTip = computed(() => {
     return 'photoAlbum.tooltip2'
   }
 })
+
+onMounted(() => {})
 
 // 使用 computed 时间戳格式化
 const dateFormat = computed(() => {

@@ -2,17 +2,12 @@
  * @Author: zhangshouchang
  * @Date: 2024-08-31 14:03:43
  * @LastEditors: zhangshouchang
- * @LastEditTime: 2024-09-02 23:13:17
+ * @LastEditTime: 2024-09-05 01:23:36
  * @Description: File description
 -->
 <template>
   <div class="photo-classification">
-    <div
-      class="grid-item"
-      v-for="[albumName, photoArray] in imageStore.groupedPhotos"
-      :key="albumName"
-      @click="openCertainAlbum(photoArray, albumName)"
-    >
+    <div class="grid-item" v-for="[albumName, photoArray] in props.groupedPhotos" :key="albumName" @click="openCertainAlbum(photoArray, albumName)">
       <div class="img-container">
         <p class="img-text">
           <span class="img-description">{{ $t(`universal.${albumName}`) }}</span>
@@ -27,6 +22,7 @@
 <script setup>
 import { useImageStore } from '@/stores/imageStore'
 
+const props = defineProps(['groupedPhotos'])
 //获取store的实例
 const imageStore = useImageStore()
 
