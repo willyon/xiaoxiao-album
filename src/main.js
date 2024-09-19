@@ -2,7 +2,7 @@
  * @Author: zhangshouchang
  * @Date: 2024-08-11 15:07:46
  * @LastEditors: zhangshouchang
- * @LastEditTime: 2024-09-03 03:45:27
+ * @LastEditTime: 2024-09-20 01:20:16
  * @Description: File description
  */
 
@@ -17,12 +17,20 @@ import i18n from './i18'
 import App from './App.vue'
 import router from './router'
 
+import vGradient from '@/directives/vBottomGradientLayer.js'
+import vInfiniteScroll from '@/directives/vInfiniteScroll'
+import vLoadingMore from '@/directives/vLoadingMore'
+
 const app = createApp(App)
 
 app.use(createPinia())
 app.use(i18n)
 app.use(router)
 app.use(ElementPlus)
+
+app.directive('gradient', vGradient)
+app.directive('infiniteScroll', vInfiniteScroll)
+app.directive('loadingMore', vLoadingMore)
 
 // 绑定当前语言类型到全局变量
 // app.config.globalProperties.$currentLocale = i18n.global.locale.value

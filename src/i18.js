@@ -2,7 +2,7 @@
  * @Author: zhangshouchang
  * @Date: 2024-09-02 18:08:46
  * @LastEditors: zhangshouchang
- * @LastEditTime: 2024-09-03 04:11:58
+ * @LastEditTime: 2024-09-18 21:07:57
  * @Description: File description
  */
 import { createI18n } from 'vue-i18n'
@@ -31,6 +31,10 @@ const messages = {
   zh: {
     universal: {
       byOther: '其它'
+    },
+    loadingText: {
+      loadMore: '请稍候，加载更多照片中......',
+      noMore: '没有更多照片咯～'
     },
     photoAlbum: {
       noTimeRecord: '没有时间记录',

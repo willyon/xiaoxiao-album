@@ -2,7 +2,7 @@
  * @Author: zhangshouchang
  * @Date: 2024-08-11 15:07:46
  * @LastEditors: zhangshouchang
- * @LastEditTime: 2024-09-05 01:42:11
+ * @LastEditTime: 2024-09-20 02:26:55
  * @Description: File description
  */
 // import { ref, computed } from 'vue'
@@ -11,6 +11,7 @@ import { DEAFULT_TIME_TAB, BY_YEAR, BY_MONTH, BY_OTHER } from '@/constants/const
 import { setZhFormat } from '@/utils/dateStringHandler'
 import { groupedByYear, groupedByMonth } from '@/utils/photosGroupedByTime'
 import { nextTick } from 'vue'
+import { DateTime } from 'luxon'
 
 export const useImageStore = defineStore('imageStore', {
   state: () => ({
@@ -20,6 +21,14 @@ export const useImageStore = defineStore('imageStore', {
     isOpenCertainAlbum: false,
     // all photos data
     allPhotos: [],
+    // all images in table
+    allPhotosTotal: 0,
+    // certain month data
+    certainMonthPhotos: [],
+    // certain album count
+    certainMonthTotal: 0,
+    // current certain month number
+    curCertainMonthTimestamp: 0,
     // current display album photos data
     albumPhotos: [],
     // certain album desc like 2024-02-03 or 2020
@@ -89,13 +98,22 @@ export const useImageStore = defineStore('imageStore', {
         this._restoreScrollPositon()
       }
     },
-    initPhotos(photos) {
-      this.updateAllPhotos(photos)
-      this.updateAlbumData(photos)
-    },
-    updateAllPhotos(photos) {
-      this.allPhotos.splice(0)
+    // updatePhotos({ data: photos, total }) {
+    // this.allPhotosTotal = total
+    // this.updateAllPhotos(photos)
+    // this.updateAlbumData(photos)
+    // },
+    updateAllPhotos({ data: photos, total }) {
+      this.allPhotosTotal = total
       this.allPhotos.push(...photos)
+    },
+    updateCertainMonthPhotos({ data: photos, total }) {
+      this.certainMonthTotal = total
+      this.certainMonthPhotos.push(...photos)
+    },
+    updateCertainMonthTimestamp(curMonth) {
+      this.curCertainMonthTimestamp = curMonth
+      console.log('curCertainMonthTimestamp:', this.curCertainMonthTimestamp)
     },
     updateAlbumData(photos) {
       this.albumPhotos.splice(0)
@@ -106,29 +124,46 @@ export const useImageStore = defineStore('imageStore', {
       this.isOpenCertainAlbum = false
       this._restoreScrollPositon()
     },
-    openCertainAlbum({ photos, albumDate }) {
-      if (photos) {
-        this.updateAlbumData(photos)
-      }
-      if (albumDate) {
-        this.updateAlbumDesc(albumDate)
-      }
+    // openCertainAlbum({ photos, albumDate }) {
+    //   if (photos) {
+    //     this.updateAlbumData(photos)
+    //   }
+    //   if (albumDate) {
+    //     this.updateAlbumDesc(albumDate)
+    //   }
+    //   this._saveScrollPosition()
+    //   this.isOpenCertainAlbum = true
+    //   nextTick(() => {
+    //     this._resetScrollTop()
+    //   })
+    // },
+    openCertainAlbum(creationDate) {
+      // 保存当前页面滚动条位置
       this._saveScrollPosition()
+      // 更新album值
+      this.updateAlbumValue(creationDate)
+      //重置具体相册数据
+      this.certainMonthPhotos.splice(0)
+      this.certainMonthTotal = 0
       this.isOpenCertainAlbum = true
-      this._initScrollTop()
+      nextTick(() => {
+        // 相册打开后，重置当前具体行测的滚动条位置至scrollTop为0
+        this._resetScrollTop()
+      })
     },
-    updateAlbumDesc(albumDate) {
-      this.albumDate = albumDate
+    updateAlbumValue(creationDate) {
+      this.albumDate = creationDate ? DateTime.fromMillis(creationDate).toFormat('yyyy-MM') : BY_OTHER
     },
     _saveScrollPosition() {
       if (this.scrollContainer) {
         this.scrollPositions[this.activeTab] = this.scrollContainer.scrollTop || 0
       }
     },
-    _initScrollTop() {
+    _resetScrollTop() {
       this.scrollContainer.scrollTop = 0
     },
     _restoreScrollPositon() {
+      // 一定要加nextTick 否则如果页面还没渲染 窗口未被内容撑开出现滚动条 即使看似赋值了scrollTop 其实实际的值也只是0
       nextTick(() => {
         // 两种写法都行
         // this.scrollContainer.scrollTop = this.scrollPositions[this.activeTab]

@@ -2,41 +2,29 @@
  * @Author: zhangshouchang
  * @Date: 2024-08-11 15:07:46
  * @LastEditors: zhangshouchang
- * @LastEditTime: 2024-09-05 01:09:12
+ * @LastEditTime: 2024-09-20 02:07:43
  * @Description: File description
 -->
 
 <template>
-  <div class="photo-album">
-    <!-- 打开总览相册 -->
-    <template v-if="props.images.length">
-      <p class="album-introduction" v-if="imageStore.isOverviewAlbum" v-html="$t('photoAlbum.introduction1', { count: props.images.length })"></p>
-      <!-- 打开年/月相册 -->
-      <p
-        class="album-introduction"
-        v-else-if="imageStore.isCertainAlbumWithTimeRecords"
-        v-html="$t('photoAlbum.introduction2', { dateFormat: imageStore.dateFormatText, count: props.images.length })"
-      ></p>
-      <!-- 打开【其它】相册 -->
-      <p
-        class="album-introduction"
-        v-else-if="imageStore.isCertainAlbumNoTimeRecords"
-        v-html="$t('photoAlbum.introduction3', { count: props.images.length })"
-      ></p>
-    </template>
-    <!-- 返回箭头 -->
-    <i class="back-arrow" v-show="imageStore.isCertainAlbum" @click="imageStore.closeCertainAlbum"></i>
+  <div
+    class="photo-album"
+    v-infinite-scroll="hitBottom"
+    v-loading-more="{ isLoading, isNoMore: !isLoading && isAtBottom }"
+    :data-loading-text="loadingText"
+    :data-no-more-text="noMoreText"
+  >
     <div
       class="grid-item"
       :class="{ 'grid-l': index % 3 === 0, 'grid-m': index % 3 === 1, 'grid-s': index % 3 === 2 }"
-      v-for="(imageObject, index) in props.images"
+      v-for="(imageObject, index) in images"
       :key="index"
     >
       <div class="img-overlay" @click="imgClick(index, $event)">
         <div class="bottom-bar">
           <p class="createtion-date">{{ $t(`${dateFormat(+imageObject.creationDate)}`) }}</p>
           <el-tooltip effect="dark" :content="$t(`${popperTip(+imageObject.creationDate)}`)" placement="top" v-if="imageStore.activeTab !== BY_MONTH">
-            <i class="album-more" @click.stop="openCertainAlbum(+imageObject.creationDate)"></i>
+            <i class="album-more" @click.stop="openCertainAlbum(imageObject)"></i>
           </el-tooltip>
         </div>
       </div>
@@ -47,13 +35,14 @@
         </template>
       </el-image>
     </div>
-    <PhotoPreview @previewClose="isShowPreview = false" v-if="isShowPreview" :previewPhotos="props.images" :initIndex="imgIndex" />
+    <!-- 图片放大预览 -->
+    <PhotoPreview @previewClose="isShowPreview = false" v-if="isShowPreview" :previewPhotos="images" :initIndex="imgIndex" />
   </div>
 </template>
 
 <script setup>
 import { DateTime } from 'luxon'
-import { ref, watch, computed, onMounted, onActivated } from 'vue'
+import { ref, watch, computed, onMounted, onActivated, nextTick } from 'vue'
 import colorPanel from '../constants/colorPanel'
 import useColumnByColumnAnimation from '../composables/useColumnByColumnAnimation'
 import isMobile from '@/utils/isMobile.js'
@@ -69,7 +58,12 @@ const isPlayAnimation = false // 是否渲染相册动画
 // 图片加载完成数
 let imageLoadedCount = ref(0)
 
-const props = defineProps(['images'])
+const props = defineProps({
+  images: [],
+  isLoading: true,
+  loadingText: 'Loading...',
+  noMoreText: 'No more...'
+})
 
 const popperTip = computed(() => {
   return (timestamp) => {
@@ -79,6 +73,19 @@ const popperTip = computed(() => {
     return 'photoAlbum.tooltip2'
   }
 })
+
+const emit = defineEmits(['load-data', 'open-certain-album'])
+let isAtBottom = ref(false)
+const hitBottom = () => {
+  console.log('photoalbum到底了')
+  if (props.isLoading) {
+    emit('load-data')
+  }
+  isAtBottom.value = true
+  setTimeout(() => {
+    isAtBottom.value = false
+  }, 3000)
+}
 
 onMounted(() => {})
 
@@ -92,11 +99,18 @@ const dateFormat = computed(() => {
   }
 })
 
-const openCertainAlbum = (creationDate) => {
-  const albumDate = creationDate ? DateTime.fromMillis(creationDate).toFormat('yyyy-MM') : BY_OTHER
-  const photos = imageStore.photoOfMonth.get(albumDate)
-  imageStore.tabSwitch(BY_MONTH)
-  imageStore.openCertainAlbum({ photos, albumDate })
+// const openCertainAlbum = (creationDate) => {
+//   const albumDate = creationDate ? DateTime.fromMillis(creationDate).toFormat('yyyy-MM') : BY_OTHER
+//   const photos = imageStore.photoOfMonth.get(albumDate)
+//   imageStore.tabSwitch(BY_MONTH)
+//   imageStore.openCertainAlbum({ photos, albumDate })
+// }
+
+const openCertainAlbum = (imageObject) => {
+  // imageStore.updateCertainMonthTimestamp(creationDate)
+  // imageStore.tabSwitch(BY_MONTH)
+  // imageStore.openCertainAlbum()
+  emit('open-certain-album', imageObject)
 }
 
 function onImageLoad() {
@@ -140,7 +154,7 @@ function itemBackgroundColor() {
 .photo-album {
   width: 100%;
   height: 100%;
-  padding: 0 @container-padding-lr;
+  padding: 0 @container-padding-lr 50px;
   display: grid;
   gap: @grid-gap;
   grid-template-columns: repeat(auto-fill, minmax(236px, 1fr));
@@ -153,31 +167,6 @@ function itemBackgroundColor() {
   // 单元格内元素水平、垂直居中
   // place-items: center;
   // place-items: end center;
-  .album-introduction {
-    position: fixed;
-    right: 20px;
-    top: 22px;
-    z-index: 10;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
-  .back-arrow {
-    display: inline-block;
-    position: fixed;
-    top: 97px;
-    left: 11px;
-    z-index: 1;
-    cursor: pointer;
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    background: url('@/assets/icons/back-arrow.png') center / 28px no-repeat; /* 默认图标路径 */
-    &:hover {
-      background-image: url('@/assets/icons/back-arrow-hover.png'); /* 悬停时的图标路径 */
-      background-color: rgba(211, 211, 211, 0.5); /* 浅灰背景色 */
-    }
-  }
   .grid-item {
     border-radius: @border-radius;
     overflow: hidden;
