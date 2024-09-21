@@ -2,15 +2,15 @@
  * @Author: zhangshouchang
  * @Date: 2024-08-30 18:15:41
  * @LastEditors: zhangshouchang
- * @LastEditTime: 2024-09-02 22:46:09
+ * @LastEditTime: 2024-09-22 02:43:22
  * @Description: File description
  */
 
 export const REQUEST_SUCCESS = 200
 
-export const DEAFULT_TIME_TAB = 'overview'
+export const OVERVIEW = 'overview'
 export const BY_YEAR = 'byYear'
 export const BY_MONTH = 'byMonth'
-export const BY_OTHER = 'byOther'
+export const BY_OTHER = 'unknown'
 
-export const TIME_TAB_GROUP = [DEAFULT_TIME_TAB, BY_YEAR, BY_MONTH]
+export const TIME_TAB_GROUP = [OVERVIEW, BY_YEAR, BY_MONTH]

@@ -2,7 +2,7 @@
  * @Author: zhangshouchang
  * @Date: 2024-09-02 18:08:46
  * @LastEditors: zhangshouchang
- * @LastEditTime: 2024-09-18 21:07:57
+ * @LastEditTime: 2024-09-22 03:24:22
  * @Description: File description
  */
 import { createI18n } from 'vue-i18n'
@@ -11,7 +11,7 @@ import { createI18n } from 'vue-i18n'
 const messages = {
   en: {
     universal: {
-      byOther: 'others'
+      unknown: 'others'
     },
     photoAlbum: {
       noTimeRecord: 'no time record',
@@ -30,7 +30,7 @@ const messages = {
   },
   zh: {
     universal: {
-      byOther: '其它'
+      unknown: '其它'
     },
     loadingText: {
       loadMore: '请稍候，加载更多照片中......',
@@ -39,7 +39,7 @@ const messages = {
     photoAlbum: {
       noTimeRecord: '没有时间记录',
       tooltip1: '翻翻看这个月其它回忆',
-      tooltip2: '翻翻看其它回忆',
+      tooltip2: '翻翻看其它没有时间记录的回忆',
       introduction1: "这是全部<span class='album-bold-text'>&nbsp;{count}&nbsp;</span>条回忆",
       introduction2:
         "这是关于<span class='album-bold-text'>&nbsp;{dateFormat}&nbsp;</span>的<span class='album-bold-text'>&nbsp;{count}&nbsp;</span>条回忆",

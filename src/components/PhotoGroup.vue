@@ -2,32 +2,61 @@
  * @Author: zhangshouchang
  * @Date: 2024-08-31 14:03:43
  * @LastEditors: zhangshouchang
- * @LastEditTime: 2024-09-05 01:23:36
+ * @LastEditTime: 2024-09-22 02:00:52
  * @Description: File description
 -->
 <template>
-  <div class="photo-classification">
-    <div class="grid-item" v-for="[albumName, photoArray] in props.groupedPhotos" :key="albumName" @click="openCertainAlbum(photoArray, albumName)">
+  <div
+    class="photo-classification"
+    v-infinite-scroll="hitBottom"
+    v-loading-more="{ isLoading, isNoMore: !isLoading && isAtBottom }"
+    :data-loading-text="loadingText"
+    :data-no-more-text="noMoreText"
+  >
+    <div class="grid-item" v-for="item of groupedCatalog" :key="item.timeOfGroup" @click="openAlbum(item)">
       <div class="img-container">
         <p class="img-text">
-          <span class="img-description">{{ $t(`universal.${albumName}`) }}</span>
-          <span class="img-count">（ 1 / {{ photoArray.length }} ）</span>
+          <span class="img-description">{{ $t(`universal.${item.timeOfGroup}`) }}</span>
+          <span class="img-count">（ 1 / {{ item.imageCount }} ）</span>
         </p>
-        <img :src="photoArray[0].smallPath" class="img-item" />
+        <img :src="item.latestImageUrl" class="img-item" />
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { useImageStore } from '@/stores/imageStore'
+// import { useImageStore } from '@/stores/imageStore'
+import { BY_YEAR, BY_MONTH, BY_OTHER } from '@/constants/constant'
+import useScrollHitBottom from '../composables/useScrollHitBottom'
+// import { BY_YEAR } from '@/constants/constant'
 
-const props = defineProps(['groupedPhotos'])
+const props = defineProps({
+  groupedCatalog: [],
+  isLoading: true,
+  loadingText: 'Loading...',
+  noMoreText: 'No more...'
+})
+
 //获取store的实例
-const imageStore = useImageStore()
+// const imageStore = useImageStore()
 
-const openCertainAlbum = (photos, albumDate) => {
-  imageStore.openCertainAlbum({ photos, albumDate })
+const emit = defineEmits(['load-data', 'open-certain-album'])
+const { hitBottom, isAtBottom } = useScrollHitBottom(props, emit)
+const openAlbum = (groupObject) => {
+  const { timeOfGroup } = groupObject
+  if (timeOfGroup !== 'unknown') {
+    if (timeOfGroup.includes('-')) {
+      // 月份目录 '2024-02'
+      emit('open-certain-album', groupObject, BY_MONTH)
+    } else {
+      // 年份目录 '2024'
+      emit('open-certain-album', groupObject, BY_YEAR)
+    }
+  } else {
+    // 无时间记录目录 'unkonown'
+    emit('open-certain-album', groupObject, BY_OTHER)
+  }
 }
 </script>
 
@@ -36,7 +65,7 @@ const openCertainAlbum = (photos, albumDate) => {
 .photo-classification {
   width: 100%;
   height: 100%;
-  padding: 0 250px;
+  padding: 0 250px 50px;
   display: grid;
   gap: @grid-gap;
   justify-content: center;

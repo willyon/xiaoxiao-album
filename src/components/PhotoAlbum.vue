@@ -2,7 +2,7 @@
  * @Author: zhangshouchang
  * @Date: 2024-08-11 15:07:46
  * @LastEditors: zhangshouchang
- * @LastEditTime: 2024-09-20 02:07:43
+ * @LastEditTime: 2024-09-22 03:29:21
  * @Description: File description
 -->
 
@@ -23,12 +23,17 @@
       <div class="img-overlay" @click="imgClick(index, $event)">
         <div class="bottom-bar">
           <p class="createtion-date">{{ $t(`${dateFormat(+imageObject.creationDate)}`) }}</p>
-          <el-tooltip effect="dark" :content="$t(`${popperTip(+imageObject.creationDate)}`)" placement="top" v-if="imageStore.activeTab !== BY_MONTH">
-            <i class="album-more" @click.stop="openCertainAlbum(imageObject)"></i>
+          <el-tooltip
+            effect="dark"
+            :content="$t(`${popperTip(+imageObject.creationDate)}`)"
+            placement="top"
+            v-if="imageStore.activeTab === OVERVIEW || (imageStore.isYearCatalogCertainAlbum && !!imageObject.creationDate)"
+          >
+            <i class="album-more" @click.stop="openAlbum(imageObject)"></i>
           </el-tooltip>
         </div>
       </div>
-      <el-image class="single-img" :src="imageObject.smallPath" @load="onImageLoad" :fit="imgFit" loading="lazy">
+      <el-image class="single-img" :src="imageObject.smallImageUrl" @load="onImageLoad" :fit="imgFit" loading="lazy">
         <!-- 占位符 保持页面布局 -->
         <template #placeholder>
           <div class="image-slot" :style="{ 'background-color': itemBackgroundColor() }"></div>
@@ -45,10 +50,11 @@ import { DateTime } from 'luxon'
 import { ref, watch, computed, onMounted, onActivated, nextTick } from 'vue'
 import colorPanel from '../constants/colorPanel'
 import useColumnByColumnAnimation from '../composables/useColumnByColumnAnimation'
+import useScrollHitBottom from '../composables/useScrollHitBottom'
 import isMobile from '@/utils/isMobile.js'
 import { useImageStore } from '@/stores/imageStore'
 import PhotoPreview from './PhotoPreview.vue'
-import { BY_OTHER, BY_MONTH } from '@/constants/constant'
+import { OVERVIEW, BY_OTHER, BY_MONTH, BY_YEAR } from '@/constants/constant'
 
 //获取store的实例
 const imageStore = useImageStore()
@@ -65,6 +71,10 @@ const props = defineProps({
   noMoreText: 'No more...'
 })
 
+const emit = defineEmits(['load-data', 'open-certain-album'])
+
+const { hitBottom, isAtBottom } = useScrollHitBottom(props, emit)
+
 const popperTip = computed(() => {
   return (timestamp) => {
     if (timestamp && !isNaN(timestamp)) {
@@ -73,19 +83,6 @@ const popperTip = computed(() => {
     return 'photoAlbum.tooltip2'
   }
 })
-
-const emit = defineEmits(['load-data', 'open-certain-album'])
-let isAtBottom = ref(false)
-const hitBottom = () => {
-  console.log('photoalbum到底了')
-  if (props.isLoading) {
-    emit('load-data')
-  }
-  isAtBottom.value = true
-  setTimeout(() => {
-    isAtBottom.value = false
-  }, 3000)
-}
 
 onMounted(() => {})
 
@@ -106,11 +103,15 @@ const dateFormat = computed(() => {
 //   imageStore.openCertainAlbum({ photos, albumDate })
 // }
 
-const openCertainAlbum = (imageObject) => {
-  // imageStore.updateCertainMonthTimestamp(creationDate)
-  // imageStore.tabSwitch(BY_MONTH)
-  // imageStore.openCertainAlbum()
-  emit('open-certain-album', imageObject)
+const openAlbum = (imageObject) => {
+  const { creationDate } = imageObject
+  if (creationDate) {
+    // 月份目录 '2024-02'
+    emit('open-certain-album', imageObject, BY_MONTH)
+  } else {
+    // 无时间记录目录 'unkonown'
+    emit('open-certain-album', imageObject, BY_OTHER)
+  }
 }
 
 function onImageLoad() {

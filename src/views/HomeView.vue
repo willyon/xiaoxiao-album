@@ -2,46 +2,41 @@
  * @Author: zhangshouchang
  * @Date: 2024-08-18 19:25:11
  * @LastEditors: zhangshouchang
- * @LastEditTime: 2024-09-20 02:20:46
+ * @LastEditTime: 2024-09-22 03:10:49
  * @Description: File description
 -->
 
 <template>
   <main v-gradient class="home-view" :style="{ 'padding-top': `${navBarHeight + 10}px` }">
     <NavBar class="nav-bar" />
+    <!-- @loadData="loadDataByPage"  -->
     <!-- 右上角相册简介 三种 -->
     <!-- 打开总览相册 -->
     <p
       class="album-introduction"
-      v-if="imageStore.isOverviewAlbum && imageStore.allPhotos.length"
+      v-if="imageStore.isOverviewAlbum && curAlbumData.length"
       v-html="$t('photoAlbum.introduction1', { count: imageStore.allPhotosTotal })"
     ></p>
     <!-- 打开年/月相册 -->
     <p
       class="album-introduction"
-      v-else-if="imageStore.isCertainAlbumWithTimeRecords && imageStore.certainMonthPhotos.length"
-      v-html="$t('photoAlbum.introduction2', { dateFormat: imageStore.dateFormatText, count: imageStore.certainMonthTotal })"
+      v-else-if="imageStore.isCertainAlbum && isAlbumWithTimeRecord && curAlbumData.length"
+      v-html="$t('photoAlbum.introduction2', { dateFormat: datePartOfAlbumIntro, count: imageStore.certainAlbumTotal })"
     ></p>
     <!-- 打开【其它】相册 -->
     <p
       class="album-introduction"
-      v-else-if="imageStore.isCertainAlbumNoTimeRecords && imageStore.certainMonthPhotos.length"
-      v-html="$t('photoAlbum.introduction3', { count: imageStore.certainMonthPhotos.length })"
+      v-else-if="imageStore.isCertainAlbum && !isAlbumWithTimeRecord && curAlbumData.length"
+      v-html="$t('photoAlbum.introduction3', { count: imageStore.certainAlbumPhotos.length })"
     ></p>
     <!-- 返回箭头（从具体相册返回其上层） -->
     <i class="back-arrow" v-show="imageStore.isCertainAlbum" @click="imageStore.closeCertainAlbum"></i>
     <KeepAlive>
-      <component
-        :is="currentComponent"
-        :key="componentId"
-        v-bind="componentProps"
-        @loadData="loadDataByPage"
-        @openCertainAlbum="openCertainMonthAlbum"
-      />
+      <component :is="currentComponent" :key="componentId" v-bind="componentProps" @loadData="loadDataByPage" @openCertainAlbum="openCertainAlbum" />
     </KeepAlive>
     <!-- <CertainAlbum
       v-show="imageStore.isCertainAlbum"
-      :images="imageStore.certainMonthPhotos"
+      :images="imageStore.certainAlbumPhotos"
       :isLoading="isCertainAlbumLoading"
       @loadData="loadDataByPage"
       @openCertainAlbum="openCertainMonthAlbum"
@@ -56,10 +51,11 @@ import OverviewAlbum from '../components/PhotoAlbum.vue'
 import CertainAlbum from '../components/PhotoAlbum.vue'
 import YearGroup from '../components/PhotoGroup.vue'
 import MonthGroup from '../components/PhotoGroup.vue'
-import { getAllImagesByPage, getCertainMonthImagesByPage } from '@/http/api.js'
+import { getAllImagesByPage, getCertainTimeRangePicsByPage, getImagesGroupedByYearByPage, getImagesGroupedByMonthByPage } from '@/http/api.js'
 import { useImageStore } from '@/stores/imageStore'
 import { v4 as uuidv4 } from 'uuid'
-import { BY_MONTH } from '@/constants/constant'
+import { BY_MONTH, BY_YEAR, BY_OTHER } from '@/constants/constant'
+import { DateTime } from 'luxon'
 
 const COMPONENT_OVERVIEW_UUID = uuidv4()
 const COMPONENT_CERTAIN_UUID = uuidv4()
@@ -88,21 +84,52 @@ const loadAllPhotosByPage = () => {
   }
 }
 
-//分页获取具体某个月的图片
-const monthTimestamp = computed(() => {
-  return imageStore.curCertainMonthTimestamp
+const curAlbumData = computed(() => {
+  if (imageStore.isOverviewAlbum) {
+    return imageStore.allPhotos
+  } else if (imageStore.isCertainAlbum) {
+    return imageStore.certainAlbumPhotos
+  }
 })
+
+// 打开特定相册 某年/某月/unkonown
+let certainImagesQueryData = { pageSize: 20, pageNo: 0, creationDate: null, dataRange: '' }
+let isAlbumWithTimeRecord = ref(false)
+const openCertainAlbum = (paramObject, albumType) => {
+  const { creationDate } = paramObject
+  certainImagesQueryData.pageNo = 0
+  certainImagesQueryData.pageSize = 20
+  certainImagesQueryData.creationDate = creationDate
+  if (albumType === BY_OTHER) {
+    isAlbumWithTimeRecord.value = false
+    certainImagesQueryData.dataRange = ''
+  } else {
+    if (albumType === BY_YEAR) {
+      certainImagesQueryData.dataRange = 'year'
+    } else if (albumType === BY_MONTH) {
+      certainImagesQueryData.dataRange = 'month'
+    }
+    isAlbumWithTimeRecord.value = true
+  }
+  isCertainAlbumLoading.value = true
+  //记录当前点击图片的时间戳（也可能为空值）
+  // 更改switch按钮样式 聚焦至 月份 按钮 并进行相关逻辑操作
+  if (imageStore.isOverviewAlbum || (imageStore.isYearCatalogCertainAlbum && BY_MONTH)) {
+    imageStore.tabSwitch(BY_MONTH)
+  }
+  imageStore.openCertainAlbum()
+}
+
+//分页获取具体某个月的图片
 let isCertainAlbumLoading = ref(true)
-let certainMonthImagesQueryData = ref({ pageSize: 20, pageNo: 0, month: monthTimestamp })
-const loadMonthPhotosByPage = () => {
+const loadCertainTimeRangeImagesByPage = () => {
   console.log('具体某个月回调了')
-  if (certainMonthImagesQueryData.value.pageNo === 0 || imageStore.certainMonthPhotos.length < imageStore.certainMonthTotal) {
-    certainMonthImagesQueryData.value.pageNo++
-    // certainMonthImagesQueryData.value.month = imageStore.curCertainMonthTimestamp
-    getCertainMonthImagesByPage(certainMonthImagesQueryData.value).then(({ data }) => {
+  if (certainImagesQueryData.pageNo === 0 || imageStore.certainAlbumPhotos.length < imageStore.certainAlbumTotal) {
+    certainImagesQueryData.pageNo++
+    getCertainTimeRangePicsByPage(certainImagesQueryData).then(({ data }) => {
       console.log('获取到的某个具体月份图片数据', data)
-      imageStore.updateCertainMonthPhotos(data)
-      if (imageStore.certainMonthPhotos.length >= imageStore.certainMonthTotal) {
+      imageStore.updateCertainAlbumPhotos(data)
+      if (imageStore.certainAlbumPhotos.length >= imageStore.certainAlbumTotal) {
         isCertainAlbumLoading.value = false
       }
     })
@@ -111,15 +138,69 @@ const loadMonthPhotosByPage = () => {
   }
 }
 
-// 打开单个月份相册
-const openCertainMonthAlbum = (imageObject) => {
-  isCertainAlbumLoading.value = true
-  certainMonthImagesQueryData.value.pageNo = 0
-  //记录当前点击图片的时间戳（也可能为空值）
-  imageStore.updateCertainMonthTimestamp(+imageObject.creationDate)
-  // 更改switch按钮样式 聚焦至 月份 按钮 并进行相关逻辑操作
-  imageStore.tabSwitch(BY_MONTH)
-  imageStore.openCertainAlbum(+imageObject.creationDate)
+const datePartOfAlbumIntro = computed(() => {
+  let dateFormatEn = ''
+  let dateFormatZh = ''
+  if (imageStore.isYearCatalogCertainAlbum) {
+    const date = DateTime.fromMillis(+imageStore.certainAlbumPhotos[0].creationDate)
+    // 已打开按年分组的具体某一相册
+    dateFormatEn = date.year // YYYY
+    dateFormatZh = `${date.year}年`
+  } else if (imageStore.isMonthCatalogCertainAlbum) {
+    const date = DateTime.fromMillis(+imageStore.certainAlbumPhotos[0].creationDate)
+    // 按月
+    dateFormatEn = `${date.year}-${date.toFormat('MM')}` //YYYY-MM
+    dateFormatZh = `${date.year}年${date.toFormat('M')}月`
+  }
+  return window.$currentLocale === 'en' ? dateFormatEn : dateFormatZh
+})
+
+//分页获取按年分组的组数据
+let isImagesGroupedByYearLoading = ref(true)
+let imagesGroupedByYearQueryData = { pageSize: 20, pageNo: 0 }
+const loadImagesGroupByYearPage = () => {
+  console.log('按年份分组回调了')
+  if (imagesGroupedByYearQueryData.pageNo === 0 || imageStore.groupByYearCatalog.length < imageStore.groupByYearCatalogTotal) {
+    imagesGroupedByYearQueryData.pageNo++
+    getImagesGroupedByYearByPage(imagesGroupedByYearQueryData)
+      .then(({ data }) => {
+        console.log('获取到图片按年份分组数据', data)
+        imageStore.updateGroupByYearCatalog(data)
+        if (imageStore.groupByYearCatalog.length >= imageStore.groupByYearCatalogTotal) {
+          isImagesGroupedByYearLoading.value = false
+        }
+      })
+      .catch((err) => {
+        console.log('获取数据出错')
+        isImagesGroupedByYearLoading.value = false
+      })
+  } else {
+    isImagesGroupedByYearLoading.value = false
+  }
+}
+
+//分页获取按月分组的组数据
+let isImagesGroupedByMonthLoading = ref(true)
+let imagesGroupedByMonthQueryData = { pageSize: 20, pageNo: 0 }
+const loadImagesGroupByMonthPage = () => {
+  console.log('按月份分组回调了')
+  if (imagesGroupedByMonthQueryData.pageNo === 0 || imageStore.groupByMonthCatalog.length < imageStore.groupByMonthCatalogTotal) {
+    imagesGroupedByMonthQueryData.pageNo++
+    getImagesGroupedByMonthByPage(imagesGroupedByMonthQueryData)
+      .then(({ data }) => {
+        console.log('获取到图片按年份分组数据', data)
+        imageStore.updateGroupByMonthCatalog(data)
+        if (imageStore.groupByMonthCatalog.length >= imageStore.groupByMonthCatalogTotal) {
+          isImagesGroupedByMonthLoading.value = false
+        }
+      })
+      .catch((err) => {
+        console.log('获取数据出错')
+        isImagesGroupedByMonthLoading.value = false
+      })
+  } else {
+    isImagesGroupedByMonthLoading.value = false
+  }
 }
 
 //获取数据
@@ -127,11 +208,11 @@ const loadDataByPage = () => {
   if (imageStore.isOverviewAlbum) {
     loadAllPhotosByPage()
   } else if (imageStore.isCertainAlbum) {
-    loadMonthPhotosByPage()
-  } else if (imageStore.isYearGroupedAlbum) {
-    return YearGroup
-  } else if (imageStore.isMonthGroupedAlbum) {
-    return MonthGroup
+    loadCertainTimeRangeImagesByPage()
+  } else if (imageStore.isYearCatalog) {
+    loadImagesGroupByYearPage()
+  } else if (imageStore.isMonthCatalog) {
+    loadImagesGroupByMonthPage()
   }
 }
 
@@ -139,17 +220,10 @@ onMounted(() => {
   setPhotoAlbumPaddingTop()
 })
 
-const currentComponent = computed(() => {
-  if (imageStore.isOverviewAlbum) {
-    return OverviewAlbum
-  } else if (imageStore.isCertainAlbum) {
-    return CertainAlbum
-  } else if (imageStore.isYearGroupedAlbum) {
-    return YearGroup
-  } else if (imageStore.isMonthGroupedAlbum) {
-    return MonthGroup
-  }
-})
+// 要处理一下
+// const coverTitleFormatText = computed(() => {
+// return window.$currentLocale === 'en' ? imageStore.groupAlbumCoverTitle : setZhFormat(imageStore.groupAlbumCoverTitle)
+// })
 
 const loadingText = '请稍候，正在努力加载中......'
 const noMoreText = '没有更多照片咯～'
@@ -157,16 +231,12 @@ const componentProps = computed(() => {
   if (imageStore.isOverviewAlbum) {
     return { images: imageStore.allPhotos, isLoading: isOverviewLoading.value, loadingText, noMoreText }
   } else if (imageStore.isCertainAlbum) {
-    return { images: imageStore.certainMonthPhotos, isLoading: isCertainAlbumLoading.value, loadingText, noMoreText }
-  } else if (imageStore.isYearGroupedAlbum) {
-    return { groupedPhotos: imageStore.photoOfYear }
-  } else if (imageStore.isMonthGroupedAlbum) {
-    return { groupedPhotos: imageStore.photoOfMonth }
+    return { images: imageStore.certainAlbumPhotos, isLoading: isCertainAlbumLoading.value, loadingText, noMoreText }
+  } else if (imageStore.isYearCatalog) {
+    return { groupedCatalog: imageStore.groupByYearCatalog, isLoading: isImagesGroupedByYearLoading.value, loadingText, noMoreText }
+  } else if (imageStore.isMonthCatalog) {
+    return { groupedCatalog: imageStore.groupByMonthCatalog, isLoading: isImagesGroupedByMonthLoading.value, loadingText, noMoreText }
   }
-})
-
-const isShowAlbumIntro = computed(() => {
-  return imageStore.isOverviewAlbum || imageStore.isCertainAlbum
 })
 
 const componentId = computed(() => {
@@ -174,10 +244,22 @@ const componentId = computed(() => {
     return COMPONENT_OVERVIEW_UUID
   } else if (imageStore.isCertainAlbum) {
     return COMPONENT_CERTAIN_UUID
-  } else if (imageStore.isYearGroupedAlbum) {
+  } else if (imageStore.isYearCatalog) {
     return COMPONENT_YEAR_UUID
-  } else if (imageStore.isMonthGroupedAlbum) {
+  } else if (imageStore.isMonthCatalog) {
     return COMPONENT_MONTH_UUID
+  }
+})
+
+const currentComponent = computed(() => {
+  if (imageStore.isOverviewAlbum) {
+    return OverviewAlbum
+  } else if (imageStore.isCertainAlbum) {
+    return CertainAlbum
+  } else if (imageStore.isYearCatalog) {
+    return YearGroup
+  } else if (imageStore.isMonthCatalog) {
+    return MonthGroup
   }
 })
 

@@ -2,7 +2,7 @@
  * @Author: zhangshouchang
  * @Date: 2024-08-25 16:38:36
  * @LastEditors: zhangshouchang
- * @LastEditTime: 2024-09-18 21:18:30
+ * @LastEditTime: 2024-09-20 08:50:53
  * @Description: File description
 -->
 <template>
@@ -20,7 +20,7 @@
     >
       <el-carousel-item v-for="(imageObject, index) in previewPhotos" :key="index">
         <div class="img-container" @keydown="onKeydown" tabindex="0" @click="closePreview">
-          <img :src="imageObject.bigPath" class="img-item" @click.stop />
+          <img :src="imageObject.bigImageUrl" class="img-item" @click.stop />
         </div>
       </el-carousel-item>
     </el-carousel>
