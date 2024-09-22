@@ -2,7 +2,7 @@
  * @Author: zhangshouchang
  * @Date: 2024-08-11 15:07:46
  * @LastEditors: zhangshouchang
- * @LastEditTime: 2024-09-22 03:29:21
+ * @LastEditTime: 2024-09-22 15:38:26
  * @Description: File description
 -->
 
@@ -27,7 +27,7 @@
             effect="dark"
             :content="$t(`${popperTip(+imageObject.creationDate)}`)"
             placement="top"
-            v-if="imageStore.activeTab === OVERVIEW || (imageStore.isYearCatalogCertainAlbum && !!imageObject.creationDate)"
+            v-if="imageStore.activeTab === OVERVIEW || (imageStore.isCertainYearAlbum && !!imageObject.creationDate)"
           >
             <i class="album-more" @click.stop="openAlbum(imageObject)"></i>
           </el-tooltip>
@@ -54,7 +54,7 @@ import useScrollHitBottom from '../composables/useScrollHitBottom'
 import isMobile from '@/utils/isMobile.js'
 import { useImageStore } from '@/stores/imageStore'
 import PhotoPreview from './PhotoPreview.vue'
-import { OVERVIEW, BY_OTHER, BY_MONTH, BY_YEAR } from '@/constants/constant'
+import { OVERVIEW, BY_OTHER, BY_MONTH } from '@/constants/constant'
 
 //获取store的实例
 const imageStore = useImageStore()
@@ -95,13 +95,6 @@ const dateFormat = computed(() => {
     return 'photoAlbum.noTimeRecord'
   }
 })
-
-// const openCertainAlbum = (creationDate) => {
-//   const albumDate = creationDate ? DateTime.fromMillis(creationDate).toFormat('yyyy-MM') : BY_OTHER
-//   const photos = imageStore.photoOfMonth.get(albumDate)
-//   imageStore.tabSwitch(BY_MONTH)
-//   imageStore.openCertainAlbum({ photos, albumDate })
-// }
 
 const openAlbum = (imageObject) => {
   const { creationDate } = imageObject

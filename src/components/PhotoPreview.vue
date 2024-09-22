@@ -2,14 +2,19 @@
  * @Author: zhangshouchang
  * @Date: 2024-08-25 16:38:36
  * @LastEditors: zhangshouchang
- * @LastEditTime: 2024-09-20 08:50:53
+ * @LastEditTime: 2024-09-22 22:31:16
  * @Description: File description
 -->
 <template>
   <div class="photo-preview">
     <span class="close-btn" @click="closePreview"></span>
+    <div class="rotate-icons">
+      <i class="rotate-left" @click="rotateImage(-1)"></i>
+      <i class="rotate-right" @click="rotateImage(1)"></i>
+    </div>
     <el-carousel
       v-if="isShowCarousel"
+      indicator-position="none"
       :initial-index="initIndex"
       :autoplay="false"
       height="100%"
@@ -19,7 +24,8 @@
       ref="carouselRef"
     >
       <el-carousel-item v-for="(imageObject, index) in previewPhotos" :key="index">
-        <div class="img-container" @keydown="onKeydown" tabindex="0" @click="closePreview">
+        <!-- tabindex使得div可聚焦 这样打开大图时 keydown事件就会自动生效 -->
+        <div class="img-container" tabindex="0" @keydown="onKeydown" @click="closePreview">
           <img :src="imageObject.bigImageUrl" class="img-item" @click.stop />
         </div>
       </el-carousel-item>
@@ -44,6 +50,14 @@ const props = defineProps({
     default: 0
   }
 })
+
+let rotateStep = 90
+let rotateAngle = 0
+const rotateImage = (angleMultiplier) => {
+  rotateAngle += angleMultiplier * rotateStep
+  const curImageEle = document.querySelector('.photo-preview').querySelectorAll('.img-item')[activeIndex.value]
+  curImageEle.style.transform = `rotate(${rotateAngle}deg)`
+}
 
 let activeIndex = ref(null)
 watch(activeIndex, (nv, ov) => {
@@ -114,6 +128,10 @@ const onWheel = throttle((event) => {
   scale += event.deltaY < 0 ? 0.1 : -0.1
   scale = Math.max(0.5, Math.min(scale, 2)) // 设置缩放范围
   // 应用缩放效果
+  // const currentTransform = event.target.getPropertyValue('transform')
+  // const newTransform = currentTransform === 'none' ? `scale(${scale})` : currentTransform + ' scale(1.5)';
+  // 更新元素的 transform 样式
+  // element.style.transform = newTransform;
   event.target.style.transform = `scale(${scale})`
 }, 10)
 
@@ -196,6 +214,31 @@ function closePreview() {
     }
     &::after {
       transform: rotate(45deg);
+    }
+  }
+
+  .rotate-icons {
+    position: fixed;
+    top: 10px;
+    right: 180px;
+    z-index: 1;
+    // display: flex;
+    i {
+      display: inline-block;
+      cursor: pointer;
+      width: 46px;
+      height: 46px;
+      &.rotate-left {
+        background: url('@/assets/icons/rotate-left.png') center / 34px no-repeat; /* 默认图标路径 */
+        margin-right: 20px;
+      }
+      &.rotate-right {
+        background: url('@/assets/icons/rotate-right.png') center / 34px no-repeat; /* 默认图标路径 */
+      }
+      border-radius: 10px;
+      &:hover {
+        background-color: rgba(211, 211, 211, 0.5); /* 浅灰背景色 */
+      }
     }
   }
   .el-carousel {

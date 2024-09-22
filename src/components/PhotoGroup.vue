@@ -2,7 +2,7 @@
  * @Author: zhangshouchang
  * @Date: 2024-08-31 14:03:43
  * @LastEditors: zhangshouchang
- * @LastEditTime: 2024-09-22 02:00:52
+ * @LastEditTime: 2024-09-22 10:43:58
  * @Description: File description
 -->
 <template>
@@ -29,7 +29,11 @@
 // import { useImageStore } from '@/stores/imageStore'
 import { BY_YEAR, BY_MONTH, BY_OTHER } from '@/constants/constant'
 import useScrollHitBottom from '../composables/useScrollHitBottom'
+import { useImageStore } from '@/stores/imageStore'
 // import { BY_YEAR } from '@/constants/constant'
+
+//获取store的实例
+const imageStore = useImageStore()
 
 const props = defineProps({
   groupedCatalog: [],
