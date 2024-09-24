@@ -2,7 +2,7 @@
  * @Author: zhangshouchang
  * @Date: 2024-08-30 21:53:19
  * @LastEditors: zhangshouchang
- * @LastEditTime: 2024-09-22 03:12:16
+ * @LastEditTime: 2024-09-24 19:15:15
  * @Description: File description
  */
 import httpCurry from './httpInstance'
@@ -28,7 +28,7 @@ const getImagesGroupedByYearByPage = (data) => {
   return httpCurry('post', '/images/queryGroupByYearAndPage')(data)
 }
 
-// 分页查询图片年份分组
+// 分页查询图片月份分组
 const getImagesGroupedByMonthByPage = (data) => {
   return httpCurry('post', '/images/queryGroupByMonthAndPage')(data)
 }

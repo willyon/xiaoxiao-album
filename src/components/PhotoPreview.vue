@@ -2,7 +2,7 @@
  * @Author: zhangshouchang
  * @Date: 2024-08-25 16:38:36
  * @LastEditors: zhangshouchang
- * @LastEditTime: 2024-09-22 22:31:16
+ * @LastEditTime: 2024-09-24 19:18:04
  * @Description: File description
 -->
 <template>
@@ -20,7 +20,7 @@
       height="100%"
       trigger="click"
       arrow="always"
-      @change="pictureSwitching"
+      @change="switchImage"
       ref="carouselRef"
     >
       <el-carousel-item v-for="(imageObject, index) in previewPhotos" :key="index">
@@ -34,7 +34,7 @@
 </template>
 
 <script setup>
-import { onMounted, watch, ref, onUnmounted, nextTick } from 'vue'
+import { onMounted, watch, ref, onUnmounted, nextTick, computed } from 'vue'
 import elementEventListenerManager from '@/utils/elementEventListenerManager.js'
 import { throttle } from 'lodash'
 
@@ -55,8 +55,7 @@ let rotateStep = 90
 let rotateAngle = 0
 const rotateImage = (angleMultiplier) => {
   rotateAngle += angleMultiplier * rotateStep
-  const curImageEle = document.querySelector('.photo-preview').querySelectorAll('.img-item')[activeIndex.value]
-  curImageEle.style.transform = `rotate(${rotateAngle}deg)`
+  updateImageTransfrom()
 }
 
 let activeIndex = ref(null)
@@ -108,13 +107,12 @@ function windowScrollPrevent(event) {
 // 当前图片元素缩放和拖拽功能添加
 function eventBinding() {
   nextTick(() => {
-    const activeItem = document.querySelector('.photo-preview').querySelectorAll('.img-item')[activeIndex.value]
     //图片放大缩小功能 绑定鼠标滚轮事件
-    elementEventListenerManager.addEventListener(activeItem, 'wheel', onWheel, {
+    elementEventListenerManager.addEventListener(curImageEle.value, 'wheel', onWheel, {
       passive: false
     })
     //图片拖拽功能 绑定鼠标点击事件
-    elementEventListenerManager.addEventListener(activeItem, 'mousedown', onMouseDown, {
+    elementEventListenerManager.addEventListener(curImageEle.value, 'mousedown', onMouseDown, {
       passive: false
     })
   })
@@ -125,15 +123,20 @@ let scale = 1
 const onWheel = throttle((event) => {
   event.preventDefault() // 阻止默认滚动行为
   // 根据滚轮滚动方向调整缩放比例
-  scale += event.deltaY < 0 ? 0.1 : -0.1
+  scale += event.deltaY < 0 ? -0.1 : 0.1
   scale = Math.max(0.5, Math.min(scale, 2)) // 设置缩放范围
-  // 应用缩放效果
-  // const currentTransform = event.target.getPropertyValue('transform')
-  // const newTransform = currentTransform === 'none' ? `scale(${scale})` : currentTransform + ' scale(1.5)';
   // 更新元素的 transform 样式
-  // element.style.transform = newTransform;
-  event.target.style.transform = `scale(${scale})`
+  updateImageTransfrom()
 }, 10)
+
+const updateImageTransfrom = () => {
+  curImageEle.value.style.transform = `scale(${scale}) rotate(${rotateAngle}deg)`
+}
+
+const updateImageLT = () => {
+  curImageEle.value.style.left = 'initial'
+  curImageEle.value.style.top = 'initial'
+}
 
 // 图片拖拽
 function onMouseDown(event) {
@@ -159,8 +162,17 @@ function onMouseDown(event) {
 }
 
 // 图片切换事件
-function pictureSwitching(newIndex) {
+function switchImage(newIndex) {
   updateActiveIndex(newIndex)
+  resetImageStyle()
+}
+
+function resetImageStyle() {
+  scale = 1
+  rotateStep = 90
+  rotateAngle = 0
+  updateImageTransfrom()
+  updateImageLT()
 }
 
 //更新当前展示图片索引缓存
@@ -170,8 +182,13 @@ function updateActiveIndex(curIndex) {
 }
 
 function closePreview() {
+  resetImageStyle()
   emit('preview-close')
 }
+
+let curImageEle = computed(() => {
+  return document.querySelector('.photo-preview').querySelectorAll('.img-item')[activeIndex.value]
+})
 </script>
 
 <style lang="less" scoped>

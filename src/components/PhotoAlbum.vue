@@ -2,7 +2,7 @@
  * @Author: zhangshouchang
  * @Date: 2024-08-11 15:07:46
  * @LastEditors: zhangshouchang
- * @LastEditTime: 2024-09-22 15:38:26
+ * @LastEditTime: 2024-09-24 23:52:08
  * @Description: File description
 -->
 
@@ -10,7 +10,7 @@
   <div
     class="photo-album"
     v-infinite-scroll="hitBottom"
-    v-loading-more="{ isLoading, isNoMore: !isLoading && isAtBottom }"
+    v-loading-more="{ isLoading: isLoading.value, isNoMore: !isLoading.value && isAtBottom }"
     :data-loading-text="loadingText"
     :data-no-more-text="noMoreText"
   >
@@ -27,13 +27,13 @@
             effect="dark"
             :content="$t(`${popperTip(+imageObject.creationDate)}`)"
             placement="top"
-            v-if="imageStore.activeTab === OVERVIEW || (imageStore.isCertainYearAlbum && !!imageObject.creationDate)"
+            v-if="imageStore.activeTab === OVERVIEW_ALBUM || (imageStore.isCertainYearAlbum && !!imageObject.creationDate)"
           >
             <i class="album-more" @click.stop="openAlbum(imageObject)"></i>
           </el-tooltip>
         </div>
       </div>
-      <el-image class="single-img" :src="imageObject.smallImageUrl" @load="onImageLoad" :fit="imgFit" loading="lazy">
+      <el-image class="single-img" :src="imageObject.smallImageUrl" :fit="imgFit" loading="lazy">
         <!-- 占位符 保持页面布局 -->
         <template #placeholder>
           <div class="image-slot" :style="{ 'background-color': itemBackgroundColor() }"></div>
@@ -47,33 +47,28 @@
 
 <script setup>
 import { DateTime } from 'luxon'
-import { ref, watch, computed, onMounted, onActivated, nextTick } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import colorPanel from '../constants/colorPanel'
-import useColumnByColumnAnimation from '../composables/useColumnByColumnAnimation'
 import useScrollHitBottom from '../composables/useScrollHitBottom'
-import isMobile from '@/utils/isMobile.js'
 import { useImageStore } from '@/stores/imageStore'
 import PhotoPreview from './PhotoPreview.vue'
-import { OVERVIEW, BY_OTHER, BY_MONTH } from '@/constants/constant'
+import { OVERVIEW_ALBUM } from '@/constants/constant'
 
 //获取store的实例
 const imageStore = useImageStore()
 
 const imgFit = 'cover'
-const isPlayAnimation = false // 是否渲染相册动画
-// 图片加载完成数
-let imageLoadedCount = ref(0)
 
 const props = defineProps({
-  images: [],
-  isLoading: true,
-  loadingText: 'Loading...',
-  noMoreText: 'No more...'
+  images: { type: Array, default: () => [] },
+  isLoading: { type: Object },
+  loadingText: { type: String, default: 'Loading...' },
+  noMoreText: { type: String, default: 'No more...' }
 })
 
 const emit = defineEmits(['load-data', 'open-certain-album'])
 
-const { hitBottom, isAtBottom } = useScrollHitBottom(props, emit)
+const { hitBottom, isAtBottom } = useScrollHitBottom(emit)
 
 const popperTip = computed(() => {
   return (timestamp) => {
@@ -100,15 +95,11 @@ const openAlbum = (imageObject) => {
   const { creationDate } = imageObject
   if (creationDate) {
     // 月份目录 '2024-02'
-    emit('open-certain-album', imageObject, BY_MONTH)
+    emit('open-certain-album', imageObject, 'month')
   } else {
     // 无时间记录目录 'unkonown'
-    emit('open-certain-album', imageObject, BY_OTHER)
+    emit('open-certain-album', imageObject)
   }
-}
-
-function onImageLoad() {
-  imageLoadedCount.value++
 }
 
 let imgIndex = ref(0)
@@ -118,15 +109,15 @@ function imgClick(index, event) {
   isShowPreview.value = true
 }
 
-watch(imageLoadedCount, (nv, ov) => {
-  // 非移动端设备且视口宽大于等于1200px 监听图片加载事件并添加动画
-  if (nv === props.images.length) {
-    if (isPlayAnimation && !isMobile && window.innerWidth >= 1200) {
-      const gridContainer = document.querySelector('.photo-album')
-      useColumnByColumnAnimation(gridContainer, 'grid-item', 'grid-animate')
-    }
-  }
-})
+// watch(imageLoadedCount, (nv, ov) => {
+//   // 非移动端设备且视口宽大于等于1200px 监听图片加载事件并添加动画
+//   if (nv === props.images.length) {
+//     if (isPlayAnimation && !isMobile && window.innerWidth >= 1200) {
+//       const gridContainer = document.querySelector('.photo-album')
+//       useColumnByColumnAnimation(gridContainer, 'grid-item', 'grid-animate')
+//     }
+//   }
+// })
 
 // 给grid-item随机背景色
 function itemBackgroundColor() {
@@ -153,14 +144,6 @@ function itemBackgroundColor() {
   gap: @grid-gap;
   grid-template-columns: repeat(auto-fill, minmax(236px, 1fr));
   grid-auto-rows: 50px;
-  // grid-auto-rows: minmax(auto, 1fr);
-  // 水平方向居中
-  // justify-content: center;
-  // 垂直方向居中
-  // align-content: center;
-  // 单元格内元素水平、垂直居中
-  // place-items: center;
-  // place-items: end center;
   .grid-item {
     border-radius: @border-radius;
     overflow: hidden;
@@ -188,7 +171,6 @@ function itemBackgroundColor() {
       display: flex;
       align-items: end;
       cursor: zoom-in;
-      // pointer-events: none;
       opacity: 0; // 初始隐藏
       &:hover {
         opacity: 1; // hover显示
@@ -228,7 +210,6 @@ function itemBackgroundColor() {
     // 单网格动画
     &.grid-animate {
       // name duration timing-function delay iteration-count direction fill-mode play-state;
-      // animation: moveAndFade 3s ease-in-out infinite;
       animation: moveAndFade 2s ease-in-out;
     }
     .single-img {
@@ -237,9 +218,6 @@ function itemBackgroundColor() {
       border-radius: @border-radius;
       // hover效果 图片放大
       transition: transform 0.3s ease;
-      // :deep(.el-image__inner) {
-      // cursor: zoom-in;
-      // }
       .image-slot {
         display: flex;
         justify-content: center;

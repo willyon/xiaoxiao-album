@@ -6,7 +6,7 @@
  * @Description: File description
  */
 import { DateTime } from 'luxon'
-import { BY_OTHER } from '@/constants/constant'
+import { UNKNOWN_ALBUM } from '@/constants/constant'
 
 const YEAR = 'byYear'
 const MONTH = 'byMonth'
@@ -34,7 +34,7 @@ const groupHandler = (arr, timestampName, keyType) => {
         key = `${date.year}-${date.toFormat('MM')}` //YYYY-MM
       }
     } else {
-      key = BY_OTHER
+      key = UNKNOWN_ALBUM
     }
 
     if (!acc[key]) {
@@ -46,9 +46,9 @@ const groupHandler = (arr, timestampName, keyType) => {
 
   //若有BY_OTHER键值对 则先暂时缓存起来然后删掉 后面所有排序完毕后再加回去
   let tmpOther = null
-  if (groupObject[BY_OTHER]) {
-    tmpOther = groupObject[BY_OTHER]
-    delete groupObject[BY_OTHER]
+  if (groupObject[UNKNOWN_ALBUM]) {
+    tmpOther = groupObject[UNKNOWN_ALBUM]
+    delete groupObject[UNKNOWN_ALBUM]
   }
 
   // 按年份降序排序 如[2024,2023,2020] 或 按月份降序排序 如[2024-2,2023-9,2020-1]
@@ -79,7 +79,7 @@ const groupHandler = (arr, timestampName, keyType) => {
 
   //把BY_OTHER内容加回来(若有)
   if (tmpOther) {
-    resultMap.set(BY_OTHER, tmpOther)
+    resultMap.set(UNKNOWN_ALBUM, tmpOther)
   }
 
   return resultMap

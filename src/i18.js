@@ -2,7 +2,7 @@
  * @Author: zhangshouchang
  * @Date: 2024-09-02 18:08:46
  * @LastEditors: zhangshouchang
- * @LastEditTime: 2024-09-22 03:24:22
+ * @LastEditTime: 2024-09-24 23:47:19
  * @Description: File description
  */
 import { createI18n } from 'vue-i18n'
@@ -59,8 +59,9 @@ export default createI18n({
   locale: 'zh', // default language
   fallbackLocale: 'en',
   messages,
-  silentTranslationWarn: true, // 关闭缺少翻译的警告
-  silentFallbackWarn: true, // 关闭回退翻译的警告
+  missingWarn: false, //禁用缺失翻译的警告
+  fallbackWarn: false, // 禁用回退翻译的警告
+  warnHtmlMessage: false,
   // 当找不到翻译时，将会执行这个函数
   missing: (locale, key, vm) => {
     // console.warn(`Missing translation for ${key} in ${locale} ${vm}`)

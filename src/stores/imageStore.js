@@ -2,19 +2,17 @@
  * @Author: zhangshouchang
  * @Date: 2024-08-11 15:07:46
  * @LastEditors: zhangshouchang
- * @LastEditTime: 2024-09-22 20:49:40
+ * @LastEditTime: 2024-09-24 23:57:21
  * @Description: File description
  */
-// import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
-import { OVERVIEW, BY_YEAR, BY_MONTH, BY_OTHER } from '@/constants/constant'
-// import { groupedByYear, groupedByMonth } from '@/utils/photosGroupedByTime'
+import { OVERVIEW_ALBUM, YEAR_CATALOG, MONTH_CATALOG } from '@/constants/constant'
 import { nextTick } from 'vue'
 
 export const useImageStore = defineStore('imageStore', {
   state: () => ({
     //default value
-    activeTab: OVERVIEW,
+    activeTab: OVERVIEW_ALBUM,
     // oepn certain year album, not overview album
     isCertainYearAlbum: false,
     isCachedCertainYearAlbum: false,
@@ -46,25 +44,17 @@ export const useImageStore = defineStore('imageStore', {
     scrollContainer: document.documentElement
   }),
   getters: {
-    //图片按年分类
-    // photoOfYear: (state) => {
-    //   return groupedByYear(state.allPhotos, 'creationDate')
-    // },
-    // 图片按月分类
-    // photoOfMonth: (state) => {
-    //   return groupedByMonth(state.allPhotos, 'creationDate')
-    // },
     // 按年份分组目录页面
     isYearCatalog: (state) => {
-      return BY_YEAR === state.activeTab && !state.isCertainYearAlbum
+      return YEAR_CATALOG === state.activeTab && !state.isCertainYearAlbum
     },
     // 按月份分组目录页面
     isMonthCatalog: (state) => {
-      return BY_MONTH === state.activeTab && !state.isCertainMonthAlbum
+      return MONTH_CATALOG === state.activeTab && !state.isCertainMonthAlbum
     },
     // 总览相册
     isOverviewAlbum: (state) => {
-      return OVERVIEW === state.activeTab
+      return OVERVIEW_ALBUM === state.activeTab
     }
   },
 
@@ -72,13 +62,19 @@ export const useImageStore = defineStore('imageStore', {
     // 返回分组(年份或月份)目录
     backToCatalog() {
       if (this.isCertainYearAlbum) {
-        this.closeAndResetCertainYearAlbum()
+        this.isCertainYearAlbum = false
+        this.isCachedCertainYearAlbum = false
+        // 关闭具体年份相册,重新加载滚动条位置并清除用于keep alive的缓存标识
+        this.scrollPositions['certainYearAlbum'] = 0
       } else if (this.isCertainMonthAlbum) {
-        this.closeAndResetCertainMonthAlbum()
+        this.isCertainMonthAlbum = false
+        this.isCachedCertainMonthAlbum = false
+        this.scrollPositions['certainMonthAlbum'] = 0
       }
       // 恢复新打开组件的上一次滚动位置
       this._restoreScrollPositon()
     },
+    // 关闭具体年份或月份相册
     closeCertainAlbum() {
       if (this.isCertainYearAlbum) {
         this.isCertainYearAlbum = false
@@ -86,6 +82,7 @@ export const useImageStore = defineStore('imageStore', {
         this.isCertainMonthAlbum = false
       }
     },
+    // 打开在年份目录或月份目录下曾被打开并被缓存的具体年份或月份相册
     reopenCachedCertainAlbum() {
       if (this.isYearCatalog) {
         if (this.isCachedCertainYearAlbum) {
@@ -97,98 +94,68 @@ export const useImageStore = defineStore('imageStore', {
         }
       }
     },
-    preconditionAndTabSwitch(curType) {
-      this.closeAndResetCertainMonthAlbum()
-      this.tabSwitch(curType)
-    },
     // 标签切换
-    tabSwitch(curType) {
-      // 如果是点击了当前active标签
-      if (curType === this.activeTab) {
-        // 且该标签下展示的内容为具体(具体某年份/具体某月份)相册 则关闭掉具体相册 回到其上一层（按年/月份分组总览页）即active标签对应的分组总览页
-        // 先不放开这个版本 统一通过返回箭头去返回上一层
-        // this.backToCatalog()
-      } else if (curType !== this.activeTab) {
+    tabSwitch(curType, openCachedCertainAlbum = true) {
+      if (curType !== this.activeTab) {
         // 保存当前组件滚动位置
-        this._saveScrollPosition()
+        this.saveScrollPosition()
         // 关闭具体相册(如果有打开的话)
         this.closeCertainAlbum()
         // 标签切换
         this.activeTab = curType
         // 重新打开上次缓存的具体相册(如果有的话)
-        this.reopenCachedCertainAlbum()
+        if (openCachedCertainAlbum) {
+          this.reopenCachedCertainAlbum()
+        }
         // 恢复新打开组件的上一次滚动位置
         this._restoreScrollPositon()
       }
     },
-    // updatePhotos({ data: photos, total }) {
-    // this.allPhotosTotal = total
-    // this.updateAllPhotos(photos)
-    // this.updateAlbumData(photos)
-    // },
+    // 更新全部图片相册数据
     updateAllPhotos({ data: photos, total }) {
       this.allPhotosTotal = total
       this.allPhotos.push(...photos)
     },
+    // 更新具体年份相册数据
     updateCertainYearAlbumPhotos({ data: photos, total }) {
       this.certainYearAlbumTotal = total
       this.certainYearAlbumPhotos.push(...photos)
     },
+    // 更新具体月份相册数据
     updateCertainMonthAlbumPhotos({ data: photos, total }) {
       this.certainMonthAlbumTotal = total
       this.certainMonthAlbumPhotos.push(...photos)
     },
+    // 更新年份目录数据
     updateGroupByYearCatalog({ data: groupsData, total }) {
       this.groupByYearCatalogTotal = total
       this.groupByYearCatalog.push(...groupsData)
     },
+    // 更新月份目录数据
     updateGroupByMonthCatalog({ data: groupsData, total }) {
       this.groupByMonthCatalogTotal = total
       this.groupByMonthCatalog.push(...groupsData)
     },
-    // updateAlbumData(photos) {
-    //   this.albumPhotos.splice(0)
-    //   this.albumPhotos.push(...photos)
-    // },
-    // 关闭具体年份相册,重新加载滚动条位置并清除用于keep alive的缓存标识
-    closeAndResetCertainYearAlbum() {
-      this.scrollPositions['certainYearAlbum'] = 0
-      this.isCertainYearAlbum = false
-      this.isCachedCertainYearAlbum = false
-    },
-
-    // 关闭具体月份相册并重新加载滚动条位置
-    closeAndResetCertainMonthAlbum() {
-      this.scrollPositions['certainMonthAlbum'] = 0
-      this.isCertainMonthAlbum = false
-      this.isCachedCertainMonthAlbum = false
-    },
-
-    openCertainYearAlbum() {
-      // 保存图片分组目录页滚动条位置
-      this._saveScrollPosition()
+    // 打开新的具体年份相册
+    openNewCertainYearAlbum() {
       //重置具体相册数据
+      this.scrollPositions['certainYearAlbum'] = 0
       this.certainYearAlbumPhotos.splice(0)
       this.certainYearAlbumPhotosTotal = 0
       this.isCertainYearAlbum = true
       this.isCachedCertainYearAlbum = true
     },
-    openCertainMonthAlbum() {
-      // 保存当前页面滚动条位置
-      this._saveScrollPosition()
+    // 打开新的具体月份相册
+    openNewCertainMonthAlbum() {
       //重置具体相册数据
+      this.scrollPositions['certainMonthAlbum'] = 0
       this.certainMonthAlbumPhotos.splice(0)
       this.certainMonthAlbumPhotosTotal = 0
       this.isCertainMonthAlbum = true
       this.isCachedCertainMonthAlbum = true
     },
-    // updateGroupAlbumCoverTitle(groupAlbumCoverTitle) {
-    //   this.groupAlbumCoverTitle = groupAlbumCoverTitle
-    // },
-    // updateAlbumValue(creationDate) {
-    //   this.albumDate = creationDate ? DateTime.fromMillis(creationDate).toFormat('yyyy-MM') : BY_OTHER
-    // },
-    _saveScrollPosition() {
+    // 保存当前组件滚动条位置
+    saveScrollPosition() {
       if (this.scrollContainer) {
         if (!this.isCertainYearAlbum && !this.isCertainMonthAlbum) {
           this.scrollPositions[this.activeTab] = this.scrollContainer.scrollTop || 0
@@ -199,6 +166,7 @@ export const useImageStore = defineStore('imageStore', {
         }
       }
     },
+    // 恢复当前组件上一次的滚动条位置
     _restoreScrollPositon() {
       // 一定要加nextTick 否则如果页面还没渲染 窗口未被内容撑开出现滚动条 即使看似赋值了scrollTop 其实实际的值也只是0
       nextTick(() => {
