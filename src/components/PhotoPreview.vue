@@ -2,7 +2,7 @@
  * @Author: zhangshouchang
  * @Date: 2024-08-25 16:38:36
  * @LastEditors: zhangshouchang
- * @LastEditTime: 2024-09-24 19:18:04
+ * @LastEditTime: 2024-09-25 23:49:25
  * @Description: File description
 -->
 <template>
@@ -19,10 +19,11 @@
       :autoplay="false"
       height="100%"
       trigger="click"
-      arrow="always"
       @change="switchImage"
+      arrow="always"
       ref="carouselRef"
     >
+      <!-- arrow="never" -->
       <el-carousel-item v-for="(imageObject, index) in previewPhotos" :key="index">
         <!-- tabindex使得div可聚焦 这样打开大图时 keydown事件就会自动生效 -->
         <div class="img-container" tabindex="0" @keydown="onKeydown" @click="closePreview">

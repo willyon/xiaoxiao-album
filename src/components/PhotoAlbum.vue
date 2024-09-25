@@ -2,7 +2,7 @@
  * @Author: zhangshouchang
  * @Date: 2024-08-11 15:07:46
  * @LastEditors: zhangshouchang
- * @LastEditTime: 2024-09-24 23:52:08
+ * @LastEditTime: 2024-09-25 12:49:14
  * @Description: File description
 -->
 
@@ -92,14 +92,7 @@ const dateFormat = computed(() => {
 })
 
 const openAlbum = (imageObject) => {
-  const { creationDate } = imageObject
-  if (creationDate) {
-    // 月份目录 '2024-02'
-    emit('open-certain-album', imageObject, 'month')
-  } else {
-    // 无时间记录目录 'unkonown'
-    emit('open-certain-album', imageObject)
-  }
+  emit('open-certain-album', imageObject)
 }
 
 let imgIndex = ref(0)

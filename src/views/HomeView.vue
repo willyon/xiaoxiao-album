@@ -2,30 +2,32 @@
  * @Author: zhangshouchang
  * @Date: 2024-08-18 19:25:11
  * @LastEditors: zhangshouchang
- * @LastEditTime: 2024-09-24 23:54:16
+ * @LastEditTime: 2024-09-25 12:48:45
  * @Description: File description
 -->
 
 <template>
   <main v-gradient class="home-view" :style="{ 'padding-top': `${navBarHeight + 10}px` }">
-    <NavBar class="nav-bar" />
-    <!-- 右上角相册简介-->
-    <!-- 总览相册 -->
-    <p
-      class="album-introduction"
-      v-if="imageStore.isOverviewAlbum && imageStore.allPhotos.length"
-      v-html="$t('photoAlbum.introduction1', { count: imageStore.allPhotosTotal })"
-    ></p>
-    <!-- 具体相册 【某年】 或 【某月】 或 无时间记录的 【其它】 -->
-    <p
-      class="album-introduction"
-      v-else-if="isCertainAlbum && certainAlbumPhotos.length"
-      v-html="
-        isAlbumWithTimeRecord
-          ? $t('photoAlbum.introduction2', { dateFormat: datePartOfAlbumIntro, count: certainAlbumTotal })
-          : $t('photoAlbum.introduction3', { count: certainAlbumPhotos.length })
-      "
-    ></p>
+    <div class="nav-container">
+      <NavBar class="nav-bar" />
+      <!-- 右上角相册简介-->
+      <!-- 总览相册 -->
+      <p
+        class="album-introduction"
+        v-if="imageStore.isOverviewAlbum && imageStore.allPhotos.length"
+        v-html="$t('photoAlbum.introduction1', { count: imageStore.allPhotosTotal })"
+      ></p>
+      <!-- 具体相册 【某年】 或 【某月】 或 无时间记录的 【其它】 -->
+      <p
+        class="album-introduction"
+        v-else-if="isCertainAlbum && certainAlbumPhotos.length"
+        v-html="
+          isAlbumWithTimeRecord
+            ? $t('photoAlbum.introduction2', { dateFormat: datePartOfAlbumIntro, count: certainAlbumTotal })
+            : $t('photoAlbum.introduction3', { count: certainAlbumTotal })
+        "
+      ></p>
+    </div>
     <!-- 返回箭头（从具体相册返回其上层） -->
     <i class="back-arrow" v-show="isCertainAlbum" @click="imageStore.backToCatalog"></i>
     <KeepAlive>
@@ -80,7 +82,7 @@ onMounted(() => {
 let navBarHeight = ref(0)
 function setPhotoAlbumPaddingTop() {
   setTimeout(() => {
-    navBarHeight.value = document.querySelector('.nav-bar').offsetHeight
+    navBarHeight.value = document.querySelector('.nav-container').offsetHeight
   }, 200)
 }
 
@@ -146,7 +148,7 @@ function loadAllPhotosByPage() {
 }
 
 //分页获取具体某年全部图片
-let certainYearImagesQueryData = { pageSize: 20, pageNo: 0, creationDate: null, dataRange: '' }
+let certainYearImagesQueryData = { pageSize: 20, pageNo: 0, creationDate: null, timeRange: '' }
 function loadCertainYearRangeImagesByPage() {
   if (!isCertainYearAlbumLoading.value) return
   if (certainYearImagesQueryData.pageNo === 0 || imageStore.certainYearAlbumPhotos.length < imageStore.certainYearAlbumTotal) {
@@ -169,7 +171,7 @@ function loadCertainYearRangeImagesByPage() {
 }
 
 //分页获取具体某月全部图片
-let certainMonthImagesQueryData = { pageSize: 20, pageNo: 0, creationDate: null, dataRange: '' }
+let certainMonthImagesQueryData = { pageSize: 20, pageNo: 0, creationDate: null, timeRange: '' }
 function loadCertainMonthRangeImagesByPage() {
   if (!isCertainMonthAlbumLoading.value) return
   if (certainMonthImagesQueryData.pageNo === 0 || imageStore.certainMonthAlbumPhotos.length < imageStore.certainMonthAlbumTotal) {
@@ -237,11 +239,11 @@ function loadImagesGroupByMonthPage() {
   }
 }
 
-const isOpenCertainMonthAlbum = computed(() => {
+const isToCertainMonthAlbum = computed(() => {
   return imageStore.isOverviewAlbum || imageStore.isCertainYearAlbum || imageStore.isMonthCatalog
 })
 
-const isOpenCertainYearAlbum = computed(() => {
+const isToCertainYearAlbum = computed(() => {
   return imageStore.isYearCatalog
 })
 
@@ -250,28 +252,28 @@ const isActiveTabNotMonthCatalog = computed(() => {
 })
 
 // 打开具体相册
-const openCertainAlbum = (paramObject, albumType = '') => {
-  if (isOpenCertainYearAlbum.value) {
+const openCertainAlbum = (paramObject) => {
+  if (isToCertainYearAlbum.value) {
     // 从年份目录页点击 打开具体年份或unknown相册
-    openCertainYearAlbum(paramObject, albumType)
-  } else if (isOpenCertainMonthAlbum.value) {
+    openCertainYearAlbum(paramObject)
+  } else if (isToCertainMonthAlbum.value) {
     // 从总览相册页/具体某年相册页/月份目录页点击打开具体月份或unknown相册
-    openCertainMonthAlbum(paramObject, albumType)
+    openCertainMonthAlbum(paramObject)
   }
 }
 
 // 打开具体某年或者unknown相册
 let isYearAlbumWithTimeRecord = ref(false)
-const openCertainYearAlbum = (paramObject, albumType) => {
-  resetDataBeforeQuery(certainYearImagesQueryData, isYearAlbumWithTimeRecord, isCertainYearAlbumLoading, paramObject, albumType)
+const openCertainYearAlbum = (paramObject) => {
+  resetDataBeforeQuery(certainYearImagesQueryData, isYearAlbumWithTimeRecord, isCertainYearAlbumLoading, paramObject, 'year')
   imageStore.saveScrollPosition()
   imageStore.openNewCertainYearAlbum()
 }
 
 // 打开具体某月或者unknown相册
 let isMonthAlbumWithTimeRecord = ref(false)
-const openCertainMonthAlbum = (paramObject, albumType) => {
-  resetDataBeforeQuery(certainMonthImagesQueryData, isMonthAlbumWithTimeRecord, isCertainMonthAlbumLoading, paramObject, albumType)
+const openCertainMonthAlbum = (paramObject) => {
+  resetDataBeforeQuery(certainMonthImagesQueryData, isMonthAlbumWithTimeRecord, isCertainMonthAlbumLoading, paramObject, 'month')
   // 更改switch按钮样式 聚焦至 【月份】 tab 并进行相关逻辑操作
   if (isActiveTabNotMonthCatalog.value) {
     // 从总览相册页或具体某年(或unknown)相册页点击打开具体月份或unknown相册 将activetab设置为月份目录页
@@ -283,12 +285,12 @@ const openCertainMonthAlbum = (paramObject, albumType) => {
   imageStore.openNewCertainMonthAlbum()
 }
 
-function resetDataBeforeQuery(queryData, isAlbumTimeRecord, isAlbumLoading, paramObject, albumType) {
+function resetDataBeforeQuery(queryData, isAlbumTimeRecord, isAlbumLoading, paramObject, timeRange) {
   const { creationDate } = paramObject
   queryData.pageNo = 0
   queryData.pageSize = 20
   queryData.creationDate = creationDate
-  queryData.dataRange = albumType
+  queryData.timeRange = timeRange
   isAlbumTimeRecord.value = !!creationDate
   isAlbumLoading.value = true
 }
@@ -352,14 +354,32 @@ const datePartOfAlbumIntro = computed(() => {
 .home-view {
   width: 100%;
   height: 100%;
-  .album-introduction {
-    position: fixed;
-    right: 20px;
-    top: 22px;
-    z-index: 10;
+  .nav-container {
     display: flex;
-    justify-content: center;
     align-items: center;
+    width: 100%;
+    min-height: @nav-bar-min-h;
+    padding: 10px @container-padding-lr 10px @container-padding-lr;
+    background: #fff;
+    box-shadow:
+      rgba(0, 0, 0, 0.08) 0px 2px 6px 0px,
+      rgba(0, 0, 0, 0.02) 0px 0px 2px 0px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 10; /* 保证导航栏在其他元素之上 */
+    .nav-bar {
+    }
+    .album-introduction {
+      // position: fixed;
+      // right: 20px;
+      // top: 22px;
+      // z-index: 10;
+      padding-left: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
   }
   .back-arrow {
     display: inline-block;

@@ -2,7 +2,7 @@
  * @Author: zhangshouchang
  * @Date: 2024-08-31 14:03:43
  * @LastEditors: zhangshouchang
- * @LastEditTime: 2024-09-24 22:24:40
+ * @LastEditTime: 2024-09-25 12:51:24
  * @Description: File description
 -->
 <template>
@@ -38,19 +38,7 @@ const props = defineProps({
 const emit = defineEmits(['load-data', 'open-certain-album'])
 const { hitBottom, isAtBottom } = useScrollHitBottom(emit)
 const openAlbum = (groupObject) => {
-  const { timeOfGroup } = groupObject
-  if (timeOfGroup !== 'unknown') {
-    if (timeOfGroup.includes('-')) {
-      // 月份目录 '2024-02'
-      emit('open-certain-album', groupObject, 'month')
-    } else {
-      // 年份目录 '2024'
-      emit('open-certain-album', groupObject, 'year')
-    }
-  } else {
-    // 无时间记录目录 'unkonown'
-    emit('open-certain-album', groupObject)
-  }
+  emit('open-certain-album', groupObject)
 }
 </script>
 

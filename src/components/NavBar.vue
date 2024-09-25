@@ -2,7 +2,7 @@
  * @Author: zhangshouchang
  * @Date: 2024-08-24 20:32:27
  * @LastEditors: zhangshouchang
- * @LastEditTime: 2024-09-21 10:07:19
+ * @LastEditTime: 2024-09-25 09:29:29
  * @Description: File description
 -->
 <template>
@@ -19,7 +19,7 @@
           {{ $t(`navBar.${tabValue}`) }}
         </li>
       </ul>
-      <ul class="tag-box tag-type">
+      <!-- <ul class="tag-box tag-type">
         <li
           class="tag-item"
           :class="{ 'tag-active': tagTypeSelected.includes(item) }"
@@ -28,7 +28,7 @@
         >
           {{ item }}
         </li>
-      </ul>
+      </ul> -->
     </div>
   </div>
 </template>
@@ -51,19 +51,19 @@ function tagClick(selectedArr, tagItem) {
 <style lang="less" scoped>
 @import '../assets/css/global.less';
 .nav-bar {
-  display: flex;
-  align-items: center;
-  width: 100%;
-  min-height: @nav-bar-min-h;
-  padding: 10px @container-padding-lr 10px @container-padding-lr;
-  background: #fff;
-  box-shadow:
-    rgba(0, 0, 0, 0.08) 0px 2px 6px 0px,
-    rgba(0, 0, 0, 0.02) 0px 0px 2px 0px;
-  position: fixed;
-  top: 0;
-  left: 0;
-  z-index: 10; /* 保证导航栏在其他元素之上 */
+  // display: flex;
+  // align-items: center;
+  // width: 100%;
+  // min-height: @nav-bar-min-h;
+  // padding: 10px @container-padding-lr 10px @container-padding-lr;
+  // background: #fff;
+  // box-shadow:
+  //   rgba(0, 0, 0, 0.08) 0px 2px 6px 0px,
+  //   rgba(0, 0, 0, 0.02) 0px 0px 2px 0px;
+  // position: fixed;
+  // top: 0;
+  // left: 0;
+  // z-index: 10; /* 保证导航栏在其他元素之上 */
   .tag-container {
     height: 100%;
     width: 100%;
