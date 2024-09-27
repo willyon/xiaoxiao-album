@@ -2,7 +2,7 @@
  * @Author: zhangshouchang
  * @Date: 2024-08-11 15:07:46
  * @LastEditors: zhangshouchang
- * @LastEditTime: 2024-09-25 12:49:14
+ * @LastEditTime: 2024-09-27 16:14:00
  * @Description: File description
 -->
 
@@ -33,7 +33,7 @@
           </el-tooltip>
         </div>
       </div>
-      <el-image class="single-img" :src="imageObject.smallImageUrl" :fit="imgFit" loading="lazy">
+      <el-image class="single-img" :src="imageObject.previewImageUrl" :fit="imgFit" loading="lazy">
         <!-- 占位符 保持页面布局 -->
         <template #placeholder>
           <div class="image-slot" :style="{ 'background-color': itemBackgroundColor() }"></div>

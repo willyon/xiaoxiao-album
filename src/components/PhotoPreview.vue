@@ -2,16 +2,16 @@
  * @Author: zhangshouchang
  * @Date: 2024-08-25 16:38:36
  * @LastEditors: zhangshouchang
- * @LastEditTime: 2024-09-25 23:49:25
+ * @LastEditTime: 2024-09-27 23:36:41
  * @Description: File description
 -->
 <template>
   <div class="photo-preview">
     <span class="close-btn" @click="closePreview"></span>
-    <div class="rotate-icons">
-      <i class="rotate-left" @click="rotateImage(-1)"></i>
-      <i class="rotate-right" @click="rotateImage(1)"></i>
-    </div>
+    <!-- 反转箭头 向左-->
+    <i class="img-rotate rotate-left" @click.stop="rotateImage(-1)"></i>
+    <!-- 反转箭头 向右-->
+    <i class="img-rotate rotate-right" @click.stop="rotateImage(1)"></i>
     <el-carousel
       v-if="isShowCarousel"
       indicator-position="none"
@@ -19,15 +19,23 @@
       :autoplay="false"
       height="100%"
       trigger="click"
-      @change="switchImage"
+      @change="onImageChange"
       arrow="always"
       ref="carouselRef"
     >
-      <!-- arrow="never" -->
       <el-carousel-item v-for="(imageObject, index) in previewPhotos" :key="index">
         <!-- tabindex使得div可聚焦 这样打开大图时 keydown事件就会自动生效 -->
         <div class="img-container" tabindex="0" @keydown="onKeydown" @click="closePreview">
-          <img :src="imageObject.bigImageUrl" class="img-item" @click.stop />
+          <p class="hack-block block-left"></p>
+          <p class="hack-block block-right"></p>
+          <img v-if="!isHighQualityImageLoaded[index]" :src="imageObject.bigLowQualityImageUrl" class="img-item low-quality" @click.stop />
+          <img
+            :src="imageObject.bigHighQualityImageUrl"
+            class="img-item high-quality"
+            :class="isHighQualityImageLoaded[index] ? 'loaded' : ''"
+            @load="handleLoaded(index)"
+            @click.stop
+          />
         </div>
       </el-carousel-item>
     </el-carousel>
@@ -37,7 +45,7 @@
 <script setup>
 import { onMounted, watch, ref, onUnmounted, nextTick, computed } from 'vue'
 import elementEventListenerManager from '@/utils/elementEventListenerManager.js'
-import { throttle } from 'lodash'
+import { throttle, debounce } from 'lodash'
 
 const emit = defineEmits(['preview-close'])
 
@@ -52,11 +60,26 @@ const props = defineProps({
   }
 })
 
+let isHighQualityImageLoaded = ref([])
+onMounted(() => {
+  for (let i = 0; i < props.previewPhotos.length; i++) {
+    isHighQualityImageLoaded.value[i] = false
+  }
+})
+const handleLoaded = (imageIndex) => {
+  isHighQualityImageLoaded.value[imageIndex] = true
+}
+
 let rotateStep = 90
 let rotateAngle = 0
 const rotateImage = (angleMultiplier) => {
   rotateAngle += angleMultiplier * rotateStep
   updateImageTransfrom()
+  focusCurImgContainer()
+}
+
+const focusCurImgContainer = () => {
+  curImageContainer.value.focus()
 }
 
 let activeIndex = ref(null)
@@ -163,9 +186,12 @@ function onMouseDown(event) {
 }
 
 // 图片切换事件
-function switchImage(newIndex) {
+function onImageChange(newIndex) {
   updateActiveIndex(newIndex)
   resetImageStyle()
+  setTimeout(() => {
+    focusCurImgContainer()
+  }, 1000)
 }
 
 function resetImageStyle() {
@@ -188,7 +214,11 @@ function closePreview() {
 }
 
 let curImageEle = computed(() => {
-  return document.querySelector('.photo-preview').querySelectorAll('.img-item')[activeIndex.value]
+  return document.querySelector('.photo-preview').querySelectorAll('.high-quality')[activeIndex.value]
+})
+
+let curImageContainer = computed(() => {
+  return document.querySelector('.photo-preview').querySelectorAll('.img-container')[activeIndex.value]
 })
 </script>
 
@@ -233,35 +263,65 @@ let curImageEle = computed(() => {
     &::after {
       transform: rotate(45deg);
     }
-  }
-
-  .rotate-icons {
-    position: fixed;
-    top: 10px;
-    right: 180px;
-    z-index: 1;
-    // display: flex;
-    i {
-      display: inline-block;
-      cursor: pointer;
-      width: 46px;
-      height: 46px;
-      &.rotate-left {
-        background: url('@/assets/icons/rotate-left.png') center / 34px no-repeat; /* 默认图标路径 */
-        margin-right: 20px;
-      }
-      &.rotate-right {
-        background: url('@/assets/icons/rotate-right.png') center / 34px no-repeat; /* 默认图标路径 */
-      }
-      border-radius: 10px;
-      &:hover {
-        background-color: rgba(211, 211, 211, 0.5); /* 浅灰背景色 */
-      }
+    &:hover {
+      background-color: #9b9da1;
     }
   }
+  .img-rotate {
+    display: inline-block;
+    position: absolute;
+    z-index: 1;
+    top: 46px;
+    cursor: pointer;
+    width: 46px;
+    height: 46px;
+    border-radius: 10px;
+    &.rotate-left {
+      background: url('@/assets/icons/rotate-left.png') center / 34px no-repeat; /* 默认图标路径 */
+      right: 340px;
+    }
+    &.rotate-right {
+      background: url('@/assets/icons/rotate-right.png') center / 34px no-repeat; /* 默认图标路径 */
+      right: 280px;
+    }
+    &:hover {
+      background-color: rgba(211, 211, 211, 0.5); /* 浅灰背景色 */
+    }
+  }
+  .img-switch {
+    display: inline-block;
+    cursor: pointer;
+    width: 40px;
+    height: 40px;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background-position: center;
+    background-size: 28px;
+    background-repeat: no-repeat;
+    pointer-events: none;
+    z-index: 2;
+    border-radius: 50%;
+    &.arrow-prev {
+      background-image: url('@/assets/icons/arrow-prev.png');
+      left: 20px;
+    }
+    &.arrow-next {
+      background-image: url('@/assets/icons/arrow-next.png');
+      right: 20px;
+    }
+    &.events-all {
+      background-color: #9b9da1;
+    }
+    &.events-none {
+      background-color: #78787c;
+    }
+  }
+
   .el-carousel {
     width: 100%;
     height: 100%;
+    // background: black;
     background: var(--mask-backdrop);
     backdrop-filter: blur(20px);
     .el-carousel__item {
@@ -273,6 +333,19 @@ let curImageEle = computed(() => {
         align-items: center;
         position: relative;
         cursor: zoom-out;
+        .hack-block {
+          position: absolute;
+          width: 36px;
+          height: 36px;
+          background: transparent;
+          pointer-events: all;
+          &.block-left {
+            left: 16px;
+          }
+          &.block-right {
+            right: 16px;
+          }
+        }
         .img-item {
           height: 100%;
           transition: transform 0.4s;
@@ -280,6 +353,16 @@ let curImageEle = computed(() => {
           object-fit: contain;
           &:hover {
             cursor: grab;
+          }
+          &.low-quality {
+            filter: blur(10px); /* 低质量图片的模糊效果 */
+          }
+          &.high-quality {
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+            &.loaded {
+              opacity: 1; /* 高质量图片淡入效果 */
+            }
           }
         }
       }
